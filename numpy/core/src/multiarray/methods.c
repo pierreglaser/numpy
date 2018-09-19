@@ -1546,7 +1546,6 @@ _setlist_pkl(PyArrayObject *self, PyObject *list)
     return 0;
 }
 
-
 static PyObject *
 array_reduce(PyArrayObject *self, PyObject *NPY_UNUSED(args))
 {
@@ -1624,6 +1623,79 @@ array_reduce(PyArrayObject *self, PyObject *NPY_UNUSED(args))
     PyTuple_SET_ITEM(state, 4, thestr);
     PyTuple_SET_ITEM(ret, 2, state);
     return ret;
+}
+
+static PyObject *
+array_reduce_ex(PyArrayObject *self, PyObject *args)
+{
+    int protocol;
+    PyObject *ret = NULL, *numeric_mod = NULL, *from_buffer_func = NULL;
+    PyObject *buffer_tuple = NULL, *pickle_module=NULL, *pickle_class = NULL;
+    PyObject *class_args = NULL, *class_args_tuple = NULL, *unused = NULL;
+    PyArrayObject *buffer = NULL;
+    PyArray_Descr *descr = NULL;
+
+    if (PyArg_ParseTuple(args,"i", &protocol)){
+        if (protocol == 5){
+            ret = PyTuple_New(2);
+
+            if (ret == NULL) {
+                return NULL;
+            }
+
+            /* if the python version is below 3.8, the pickle module does not provide
+             * built-in support for protocol 5. We try importing the pickle5
+             * backport instead */
+            if (PY_VERSION_HEX < 0x03080000){
+                pickle_module = PyImport_ImportModule("pickle5");
+            }
+
+            else {
+                pickle_module = PyImport_ImportModule("pickle");
+            }
+
+            if (pickle_module == NULL){
+                return NULL;
+            }
+            pickle_class = PyObject_GetAttrString(pickle_module, "PickleBuffer");
+
+            class_args_tuple = PyTuple_New(1);
+            PyTuple_SET_ITEM(class_args_tuple, 0, self);
+            class_args = Py_BuildValue("O", class_args_tuple);
+
+            buffer = PyObject_CallObject(pickle_class, class_args);
+
+            numeric_mod = PyImport_ImportModule("numpy.core.numeric");
+            if (numeric_mod == NULL) {
+                Py_DECREF(ret);
+                return NULL;
+            }
+            from_buffer_func = PyObject_GetAttrString(numeric_mod, "_frombuffer");
+            Py_DECREF(numeric_mod);
+
+            descr = PyArray_DESCR(self);
+            Py_INCREF(descr);
+
+            buffer_tuple = PyTuple_New(3);
+            PyTuple_SET_ITEM(buffer_tuple, 0, buffer);
+            PyTuple_SET_ITEM(buffer_tuple, 1, (PyObject *)descr);
+            PyTuple_SET_ITEM(buffer_tuple, 2,
+                             PyObject_GetAttrString((PyObject *)self,
+                                                    "shape"));
+
+            PyTuple_SET_ITEM(ret, 0, from_buffer_func);
+            PyTuple_SET_ITEM(ret, 1, buffer_tuple);
+
+            return ret;
+        }
+        else {
+            return array_reduce(self, unused);
+        }
+    }
+    else {
+        return NULL;
+    }
+
 }
 
 static PyObject *
@@ -2495,6 +2567,9 @@ NPY_NO_EXPORT PyMethodDef array_methods[] = {
     /* for Pickling */
     {"__reduce__",
         (PyCFunction) array_reduce,
+        METH_VARARGS, NULL},
+    {"__reduce_ex__",
+        (PyCFunction) array_reduce_ex,
         METH_VARARGS, NULL},
     {"__setstate__",
         (PyCFunction) array_setstate,
