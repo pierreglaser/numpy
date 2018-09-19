@@ -1546,7 +1546,6 @@ _setlist_pkl(PyArrayObject *self, PyObject *list)
     return 0;
 }
 
-
 static PyObject *
 array_reduce(PyArrayObject *self, PyObject *NPY_UNUSED(args))
 {
@@ -1624,6 +1623,56 @@ array_reduce(PyArrayObject *self, PyObject *NPY_UNUSED(args))
     PyTuple_SET_ITEM(state, 4, thestr);
     PyTuple_SET_ITEM(ret, 2, state);
     return ret;
+}
+
+static PyObject *
+array_reduce_ex(PyArrayObject *self, PyObject *args)
+{
+    int protocol;
+    PyObject *ret = NULL, *mod = NULL, *obj=NULL, *buffer_tuple = NULL;
+    PyArrayObject *buffer = NULL;
+    PyArray_Descr *descr = NULL;
+    PyObject *unused = NULL;
+
+    if (PyArg_ParseTuple(args,"i", &protocol)){
+        if (protocol==5){
+            ret = PyTuple_New(2);
+
+        if (ret == NULL) {
+            return NULL;
+        }
+            mod = PyImport_ImportModule("numpy.core.numeric");
+            if (mod == NULL) {
+                Py_DECREF(ret);
+                return NULL;
+            }
+            obj = PyObject_GetAttrString(mod, "_frombuffer");
+            Py_DECREF(mod);
+            buffer_tuple = PyTuple_New(3);
+            buffer = PyPickleBuffer_FromObject(self);
+            Py_INCREF(buffer);
+            descr = PyArray_DESCR(self);
+            Py_INCREF(descr);
+
+            PyTuple_SET_ITEM(buffer_tuple, 0, buffer);
+            PyTuple_SET_ITEM(buffer_tuple, 1, (PyObject *)descr);
+            PyTuple_SET_ITEM(buffer_tuple, 2,
+                             PyObject_GetAttrString((PyObject *)self,
+                                                    "shape"));
+
+            PyTuple_SET_ITEM(ret, 0, obj);
+            PyTuple_SET_ITEM(ret, 1, buffer_tuple);
+
+            return ret;
+        }
+        else {
+            return array_reduce(self,unused);
+        }
+    }
+    else {
+        return NULL;
+    }
+
 }
 
 static PyObject *
@@ -2495,6 +2544,9 @@ NPY_NO_EXPORT PyMethodDef array_methods[] = {
     /* for Pickling */
     {"__reduce__",
         (PyCFunction) array_reduce,
+        METH_VARARGS, NULL},
+    {"__reduce_ex__",
+        (PyCFunction) array_reduce_ex,
         METH_VARARGS, NULL},
     {"__setstate__",
         (PyCFunction) array_setstate,
