@@ -1634,44 +1634,52 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
     PyArray_Descr *descr = NULL;
     PyObject *unused = NULL;
 
-    if (PyArg_ParseTuple(args,"i", &protocol)){
-        if (protocol==5){
-            ret = PyTuple_New(2);
+    /* the Py_PicleBuffer API does not exist in python 3.8
+       so for the code to compile, we must add a preprocessor
+       conditional block 
+    */ 
+    #if PY_VERSION_HEX < 0x03080000
+        return array_reduce(self,unused);
+    #else
+        if (PyArg_ParseTuple(args,"i", &protocol)){
+            if (protocol==5){
+                ret = PyTuple_New(2);
 
-        if (ret == NULL) {
-            return NULL;
-        }
-            mod = PyImport_ImportModule("numpy.core.numeric");
-            if (mod == NULL) {
-                Py_DECREF(ret);
+            if (ret == NULL) {
                 return NULL;
             }
-            obj = PyObject_GetAttrString(mod, "_frombuffer");
-            Py_DECREF(mod);
-            buffer_tuple = PyTuple_New(3);
-            buffer = PyPickleBuffer_FromObject(self);
-            Py_INCREF(buffer);
-            descr = PyArray_DESCR(self);
-            Py_INCREF(descr);
+                mod = PyImport_ImportModule("numpy.core.numeric");
+                if (mod == NULL) {
+                    Py_DECREF(ret);
+                    return NULL;
+                }
+                obj = PyObject_GetAttrString(mod, "_frombuffer");
+                Py_DECREF(mod);
+                buffer_tuple = PyTuple_New(3);
+                buffer = PyPickleBuffer_FromObject(self);
+                Py_INCREF(buffer);
+                descr = PyArray_DESCR(self);
+                Py_INCREF(descr);
 
-            PyTuple_SET_ITEM(buffer_tuple, 0, buffer);
-            PyTuple_SET_ITEM(buffer_tuple, 1, (PyObject *)descr);
-            PyTuple_SET_ITEM(buffer_tuple, 2,
-                             PyObject_GetAttrString((PyObject *)self,
-                                                    "shape"));
+                PyTuple_SET_ITEM(buffer_tuple, 0, buffer);
+                PyTuple_SET_ITEM(buffer_tuple, 1, (PyObject *)descr);
+                PyTuple_SET_ITEM(buffer_tuple, 2,
+                                 PyObject_GetAttrString((PyObject *)self,
+                                                        "shape"));
 
-            PyTuple_SET_ITEM(ret, 0, obj);
-            PyTuple_SET_ITEM(ret, 1, buffer_tuple);
+                PyTuple_SET_ITEM(ret, 0, obj);
+                PyTuple_SET_ITEM(ret, 1, buffer_tuple);
 
-            return ret;
+                return ret;
+            }
+            else {
+                return array_reduce(self,unused);
+            }
         }
         else {
-            return array_reduce(self,unused);
+            return NULL;
         }
-    }
-    else {
-        return NULL;
-    }
+    #endif
 
 }
 
