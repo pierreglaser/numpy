@@ -1630,9 +1630,10 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
 {
     int protocol;
     PyObject *ret = NULL, *numeric_mod = NULL, *from_buffer_func = NULL;
-    PyObject *buffer_tuple = NULL, *pickle_module=NULL, *pickle_class = NULL;
+    PyObject *buffer_tuple = NULL, *pickle_module = NULL, *pickle_class = NULL;
     PyObject *class_args = NULL, *class_args_tuple = NULL, *unused = NULL;
-    PyArrayObject *buffer = NULL;
+    PyObject *subclass_array_reduce = NULL;
+    PyObject *buffer = NULL;
     PyArray_Descr *descr = NULL;
 
     if (PyArg_ParseTuple(args,"i", &protocol)){
@@ -1657,10 +1658,11 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
             if (pickle_module == NULL){
                 return NULL;
             }
-            pickle_class = PyObject_GetAttrString(pickle_module, "PickleBuffer");
+            pickle_class = PyObject_GetAttrString(pickle_module,
+                                                  "PickleBuffer");
 
             class_args_tuple = PyTuple_New(1);
-            PyTuple_SET_ITEM(class_args_tuple, 0, self);
+            PyTuple_SET_ITEM(class_args_tuple, 0, (PyObject *)self);
             class_args = Py_BuildValue("O", class_args_tuple);
 
             buffer = PyObject_CallObject(pickle_class, class_args);
@@ -1670,7 +1672,8 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
                 Py_DECREF(ret);
                 return NULL;
             }
-            from_buffer_func = PyObject_GetAttrString(numeric_mod, "_frombuffer");
+            from_buffer_func = PyObject_GetAttrString(numeric_mod,
+                                                      "_frombuffer");
             Py_DECREF(numeric_mod);
 
             descr = PyArray_DESCR(self);
@@ -1689,7 +1692,11 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
             return ret;
         }
         else {
-            return array_reduce(self, unused);
+            /* In case self is an instance of a numpy array subclass we get the
+             * __reduce__ method of  this subclass */
+            subclass_array_reduce = PyObject_GetAttrString((PyObject *)self,
+                                                           "__reduce__");
+            return PyObject_CallObject(subclass_array_reduce, unused);
         }
     }
     else {
