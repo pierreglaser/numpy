@@ -1673,7 +1673,7 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
                 return NULL;
             }
             from_buffer_func = PyObject_GetAttrString(numeric_mod,
-                                                      "_frombuffer");
+                                                      "frombuffer");
             Py_DECREF(numeric_mod);
 
             descr = PyArray_DESCR(self);

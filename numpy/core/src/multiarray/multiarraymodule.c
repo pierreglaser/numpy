@@ -2116,19 +2116,27 @@ array_frombuffer(PyObject *NPY_UNUSED(ignored), PyObject *args, PyObject *keywds
 {
     PyObject *obj = NULL;
     Py_ssize_t nin = -1, offset = 0;
-    static char *kwlist[] = {"buffer", "dtype", "count", "offset", NULL};
+    NPY_ORDER order = NPY_CORDER;
+    static char *kwlist[] = {"buffer", "dtype", "shape", "order", "count", "offset",
+                             NULL};
+    PyObject *shape  = Py_None;
     PyArray_Descr *type = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywds,
-                "O|O&" NPY_SSIZE_T_PYFMT NPY_SSIZE_T_PYFMT ":frombuffer", kwlist,
-                &obj, PyArray_DescrConverter, &type, &nin, &offset)) {
+    if (!PyArg_ParseTupleAndKeywords(
+                args, keywds,
+                "O|O&OO&" NPY_SSIZE_T_PYFMT NPY_SSIZE_T_PYFMT ":frombuffer",
+                kwlist, &obj, PyArray_DescrConverter, &type,
+                &shape,
+                PyArray_OrderConverter, &order,
+                &nin, &offset)) {
         Py_XDECREF(type);
         return NULL;
     }
     if (type == NULL) {
         type = PyArray_DescrFromType(NPY_DEFAULT_TYPE);
     }
-    return PyArray_FromBuffer(obj, type, (npy_intp)nin, (npy_intp)offset);
+    return PyArray_FromBuffer(obj, type, shape, order,
+                             (npy_intp)nin, (npy_intp)offset);
 }
 
 static PyObject *

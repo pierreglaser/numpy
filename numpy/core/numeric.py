@@ -1928,10 +1928,6 @@ def fromfunction(function, shape, **kwargs):
     return function(*args, **kwargs)
 
 
-def _frombuffer(buffer, dtype, shape):
-    return frombuffer(buffer, dtype=dtype).reshape(shape)
-
-
 def isscalar(num):
     """
     Returns True if the type of `num` is a scalar type.

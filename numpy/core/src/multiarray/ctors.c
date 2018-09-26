@@ -3661,9 +3661,11 @@ PyArray_FromFile(FILE *fp, PyArray_Descr *dtype, npy_intp num, char *sep)
 /*NUMPY_API*/
 NPY_NO_EXPORT PyObject *
 PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
+                   PyObject *shape, NPY_ORDER order,
                    npy_intp count, npy_intp offset)
 {
     PyArrayObject *ret;
+    PyObject *final_ret;
     char *data;
 #if defined(NPY_PY3K)
     Py_buffer view;
@@ -3673,6 +3675,7 @@ PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
     int itemsize;
     int writeable = 1;
 
+    PyArray_Dims final_array_shape;
 
     if (PyDataType_REFCHK(type)) {
         PyErr_SetString(PyExc_ValueError,
@@ -3785,7 +3788,20 @@ PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
     if (!writeable) {
         PyArray_CLEARFLAGS(ret, NPY_ARRAY_WRITEABLE);
     }
-    return (PyObject *)ret;
+
+    if (!(shape == Py_None)){
+        if (!PyArray_IntpConverter(shape,&final_array_shape)){
+            return NULL;
+        }
+        final_ret = PyArray_Newshape(ret, &final_array_shape, order);
+        npy_free_cache_dim_obj((PyArray_Dims)final_array_shape);
+        return final_ret;
+        /* return */
+    }
+    else {
+        return ret;
+    }
+
 }
 
 /*NUMPY_API
