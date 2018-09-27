@@ -1985,7 +1985,15 @@ PyArray_Dumps(PyObject *self, int protocol)
         protocol = 2;
     }
 #if defined(NPY_PY3K)
+#if PY_VERSION_HEX < 0x03080000 && PY_VERSION_HEX >= 0x03070000
+ /* try to use the pickle5 backport on python 3.7 if possible */
+    cpick = PyImport_ImportModule("pickle5");
+    if (cpick == NULL){
+        cpick = PyImport_ImportModule("pickle");
+    }
+#else
     cpick = PyImport_ImportModule("pickle");
+#endif
 #else
     cpick = PyImport_ImportModule("cPickle");
 #endif
