@@ -1642,7 +1642,8 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
         descr = PyArray_DESCR(self);
         if ((protocol<5) ||
             !PyArray_IS_C_CONTIGUOUS((PyArrayObject*)self) ||
-            descr == PyArray_DescrFromType(NPY_OBJECT)) {
+            descr == PyArray_DescrFromType(NPY_OBJECT) ||
+            PyDataType_ISUNSIZED(descr)) {
             /* In case self is an instance of a numpy array subclass we get the
              * __reduce__ method of  this subclass */
             subclass_array_reduce = PyObject_GetAttrString((PyObject *)self,
