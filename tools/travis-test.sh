@@ -20,7 +20,11 @@ source builds/venv/bin/activate
 PYTHON=${PYTHON:-python}
 PIP=${PIP:-pip}
 
-VERSION=$($PYTHON -c "import sys; print(sys.version[:3])")
+if ! [ -n "$USE_CHROOT" ] && [ $# -eq 0 ]; then
+# VERSION is not needed when $USE_CHROOT is set
+  VERSION=$($PYTHON -c "import sys; print(sys.version[:3])")
+fi
+
 
 if [ -n "$PYTHON_OPTS" ]; then
   PYTHON="${PYTHON} $PYTHON_OPTS"
