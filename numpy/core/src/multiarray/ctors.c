@@ -3799,7 +3799,7 @@ PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
         /* return */
     }
     else {
-        return ret;
+        return (PyObject *)ret;
     }
 
 }
