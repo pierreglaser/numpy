@@ -1593,6 +1593,8 @@ array_reduce(PyArrayObject *self, PyObject *NPY_UNUSED(args))
 
        Notice because Python does not describe a mechanism to write
        raw data to the pickle, this performs a copy to a string first
+       This issue is now adressed in protocol 5, where a buffer is serialized
+       instead of a string,
     */
 
     state = PyTuple_New(5);
@@ -1637,7 +1639,17 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
     PyArray_Descr *descr = NULL;
 
     if (PyArg_ParseTuple(args,"i", &protocol)){
-        if (protocol == 5){
+        descr = PyArray_DESCR(self);
+        if ((protocol<5) ||
+            !PyArray_IS_C_CONTIGUOUS((PyArrayObject*)self) ||
+            descr == PyArray_DescrFromType(NPY_OBJECT)) {
+            /* In case self is an instance of a numpy array subclass we get the
+             * __reduce__ method of  this subclass */
+            subclass_array_reduce = PyObject_GetAttrString((PyObject *)self,
+                                                           "__reduce__");
+            return PyObject_CallObject(subclass_array_reduce, unused);
+        }
+        else if (protocol == 5){
             ret = PyTuple_New(2);
 
             if (ret == NULL) {
@@ -1676,7 +1688,6 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
                                                       "frombuffer");
             Py_DECREF(numeric_mod);
 
-            descr = PyArray_DESCR(self);
             Py_INCREF(descr);
 
             buffer_tuple = PyTuple_New(3);
@@ -1692,11 +1703,7 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
             return ret;
         }
         else {
-            /* In case self is an instance of a numpy array subclass we get the
-             * __reduce__ method of  this subclass */
-            subclass_array_reduce = PyObject_GetAttrString((PyObject *)self,
-                                                           "__reduce__");
-            return PyObject_CallObject(subclass_array_reduce, unused);
+            return NULL;
         }
     }
     else {
