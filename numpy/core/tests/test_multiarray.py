@@ -1372,9 +1372,8 @@ class TestZeroSizeFlexible(object):
 
     def test_pickle(self):
         import pickle
-        for proto in range(2,pickle.HIGHEST_PROTOCOL+1):
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
             for dt in [bytes, np.void, unicode]:
-                __import__('pdb').set_trace()
                 zs = self._zeros(10, dt)
                 p = pickle.dumps(zs, protocol=proto)
                 zs2 = pickle.loads(p)
