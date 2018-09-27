@@ -20,6 +20,8 @@ source builds/venv/bin/activate
 PYTHON=${PYTHON:-python}
 PIP=${PIP:-pip}
 
+VERSION=$($PYTHON -c "import sys; print(sys.version[:3])")
+
 if [ -n "$PYTHON_OPTS" ]; then
   PYTHON="${PYTHON} $PYTHON_OPTS"
 fi
@@ -187,6 +189,11 @@ if [ -n "$USE_WHEEL" ] && [ $# -eq 0 ]; then
   pushd dist
   pip install --pre --no-index --upgrade --find-links=. numpy
   pip install nose pytest
+  if [ "$VERSION" == "3.7" ]; then
+      # use pickle5 backport when on python3.7
+      pip install pickle5
+  fi
+
   popd
   run_test
 elif [ -n "$USE_SDIST" ] && [ $# -eq 0 ]; then
@@ -204,6 +211,10 @@ elif [ -n "$USE_SDIST" ] && [ $# -eq 0 ]; then
   pushd dist
   pip install numpy*
   pip install nose pytest
+  if [ "$VERSION" == "3.7" ]; then
+      # use pickle5 backport when on python3.7
+      pip install pickle5
+  fi
   popd
   run_test
 elif [ -n "$USE_CHROOT" ] && [ $# -eq 0 ]; then

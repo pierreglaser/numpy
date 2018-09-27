@@ -20,6 +20,13 @@ fi
 
 source venv/bin/activate
 python -V
+
+VERSION=$(python -c "import sys; print(sys.version[:3])")
+if [ "$VERSION" == "3.7" ]; then
+  # use pickle5 backport when on python3.7
+  pip install pickle5
+fi
+
 pip install --upgrade pip setuptools
 pip install nose pytz cython pytest
 if [ -n "$USE_ASV" ]; then pip install asv; fi
