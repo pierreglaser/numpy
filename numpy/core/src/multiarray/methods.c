@@ -1660,13 +1660,15 @@ array_reduce_ex(PyArrayObject *self, PyObject *args)
             /* if the python version is below 3.8, the pickle module does not provide
              * built-in support for protocol 5. We try importing the pickle5
              * backport instead */
-            if (PY_VERSION_HEX < 0x03080000){
-                pickle_module = PyImport_ImportModule("pickle5");
-            }
-
-            else {
-                pickle_module = PyImport_ImportModule("pickle");
-            }
+#if defined(NPY_PY3K)
+#if PY_VERSION_HEX < 0x03080000 && PY_VERSION_HEX >= 0x03070000
+            pickle_module = PyImport_ImportModule("pickle5");
+#else
+            pickle_module = PyImport_ImportModule("pickle");
+#endif
+#else
+            pickle_module = PyImport_ImportModule("cPickle");
+#endif
 
             if (pickle_module == NULL){
                 return NULL;
@@ -1948,7 +1950,11 @@ PyArray_Dump(PyObject *self, PyObject *file, int protocol)
     }
 
 #if defined(NPY_PY3K)
+#if PY_VERSION_HEX < 0x03080000 && PY_VERSION_HEX >= 0x03070000
+    cpick = PyImport_ImportModule("pickle5");
+#else
     cpick = PyImport_ImportModule("pickle");
+#endif
 #else
     cpick = PyImport_ImportModule("cPickle");
 #endif
@@ -1984,19 +1990,17 @@ PyArray_Dumps(PyObject *self, int protocol)
     if (protocol < 0) {
         protocol = 2;
     }
+
 #if defined(NPY_PY3K)
 #if PY_VERSION_HEX < 0x03080000 && PY_VERSION_HEX >= 0x03070000
- /* try to use the pickle5 backport on python 3.7 if possible */
     cpick = PyImport_ImportModule("pickle5");
-    if (cpick == NULL){
-        cpick = PyImport_ImportModule("pickle");
-    }
 #else
     cpick = PyImport_ImportModule("pickle");
 #endif
 #else
     cpick = PyImport_ImportModule("cPickle");
 #endif
+
     if (cpick == NULL) {
         return NULL;
     }

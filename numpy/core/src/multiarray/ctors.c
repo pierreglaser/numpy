@@ -3794,9 +3794,7 @@ PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
             return NULL;
         }
         final_ret = PyArray_Newshape(ret, &final_array_shape, order);
-        npy_free_cache_dim_obj((PyArray_Dims)final_array_shape);
         return final_ret;
-        /* return */
     }
     else {
         return (PyObject *)ret;
