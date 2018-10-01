@@ -1,5 +1,6 @@
 from __future__ import division, absolute_import, print_function
 
+import sys
 import warnings
 import itertools
 
@@ -43,7 +44,10 @@ class TestUfuncKwargs(object):
 
 class TestUfunc(object):
     def test_pickle(self):
-        import pickle
+        if sys.version[:2] == (3, 7):
+            import pickle5 as pickle
+        else:
+            import pickle
         assert_(pickle.loads(pickle.dumps(np.sin)) is np.sin)
 
         # Check that ufunc not defined in the top level numpy namespace such as

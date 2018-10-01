@@ -3794,6 +3794,7 @@ PyArray_FromBuffer(PyObject *buf, PyArray_Descr *type,
             return NULL;
         }
         final_ret = PyArray_Newshape(ret, &final_array_shape, order);
+        /* Py_INCREF(Py_Array_DESCR(ret)); */
         return final_ret;
     }
     else {

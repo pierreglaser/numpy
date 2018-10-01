@@ -1,7 +1,10 @@
 from __future__ import division, absolute_import, print_function
 
 import sys
-import pickle
+if sys.version[:2] == (3, 7):
+    import pickle5 as pickle
+else:
+    import pickle
 
 from numpy.testing import assert_raises, assert_, assert_equal
 

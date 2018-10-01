@@ -7,11 +7,15 @@ try:
     import collections.abc as collections_abc
 except ImportError:
     import collections as collections_abc
-import pickle
 import warnings
 import textwrap
 from os import path
 import pytest
+
+if sys.version_info[:2] == (3, 7):
+    import pickle5 as pickle
+else:
+    import pickle
 
 import numpy as np
 from numpy.testing import (
@@ -378,22 +382,27 @@ class TestRecord(object):
     def test_pickle_1(self):
         # Issue #1529
         a = np.array([(1, [])], dtype=[('a', np.int32), ('b', np.int32, 0)])
-        assert_equal(a, pickle.loads(pickle.dumps(a)))
-        assert_equal(a[0], pickle.loads(pickle.dumps(a[0])))
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            assert_equal(a, pickle.loads(pickle.dumps(a, protocol=proto)))
+            assert_equal(a[0], pickle.loads(pickle.dumps(a[0],
+                                            protocol=proto)))
 
     def test_pickle_2(self):
         a = self.data
-        assert_equal(a, pickle.loads(pickle.dumps(a)))
-        assert_equal(a[0], pickle.loads(pickle.dumps(a[0])))
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            assert_equal(a, pickle.loads(pickle.dumps(a, protocol=proto)))
+            assert_equal(a[0], pickle.loads(pickle.dumps(a[0],
+                                                         protocol=proto)))
 
     def test_pickle_3(self):
         # Issue #7140
         a = self.data
-        pa = pickle.loads(pickle.dumps(a[0]))
-        assert_(pa.flags.c_contiguous)
-        assert_(pa.flags.f_contiguous)
-        assert_(pa.flags.writeable)
-        assert_(pa.flags.aligned)
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            pa = pickle.loads(pickle.dumps(a[0], protocol=proto))
+            assert_(pa.flags.c_contiguous)
+            assert_(pa.flags.f_contiguous)
+            assert_(pa.flags.writeable)
+            assert_(pa.flags.aligned)
 
     def test_objview_record(self):
         # https://github.com/numpy/numpy/issues/2599

@@ -1,10 +1,14 @@
 from __future__ import division, absolute_import, print_function
 
-import pickle
 import sys
 import operator
 import pytest
 import ctypes
+
+if sys.version_info[:2] == (3, 7):
+    import pickle5 as pickle
+else:
+    import pickle
 
 import numpy as np
 from numpy.core._rational_tests import rational
@@ -666,7 +670,7 @@ class TestDtypeAttributes(object):
 class TestPickling(object):
 
     def check_pickling(self, dtype):
-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+        for proto in range(2, pickle.HIGHEST_PROTOCOL + 1):
             pickled = pickle.loads(pickle.dumps(dtype, proto))
             assert_equal(pickled, dtype)
             assert_equal(pickled.descr, dtype.descr)

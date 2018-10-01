@@ -12,6 +12,13 @@ from os import path
 from io import BytesIO
 from itertools import chain
 
+if sys.version_info[:2] == (3, 7):
+    # For python 3.7, try to use the pickle 5 backport.
+    import pickle5 as pickle
+else:
+    import pickle
+
+
 import numpy as np
 from numpy.testing import (
         assert_, assert_equal, IS_PYPY, assert_almost_equal,
@@ -818,8 +825,9 @@ class TestRegression(object):
         # Ticket #600
         x = np.array(["DROND", "DROND1"], dtype="U6")
         el = x[1]
-        new = pickle.loads(pickle.dumps(el))
-        assert_equal(new, el)
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            new = pickle.loads(pickle.dumps(el, protocol=proto))
+            assert_equal(new, el)
 
     def test_arange_non_native_dtype(self):
         # Ticket #616
@@ -1066,11 +1074,12 @@ class TestRegression(object):
     def test_dot_alignment_sse2(self):
         # Test for ticket #551, changeset r5140
         x = np.zeros((30, 40))
-        y = pickle.loads(pickle.dumps(x))
-        # y is now typically not aligned on a 8-byte boundary
-        z = np.ones((1, y.shape[0]))
-        # This shouldn't cause a segmentation fault:
-        np.dot(z, y)
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            y = pickle.loads(pickle.dumps(x, protocol=proto))
+            # y is now typically not aligned on a 8-byte boundary
+            z = np.ones((1, y.shape[0]))
+            # This shouldn't cause a segmentation fault:
+            np.dot(z, y)
 
     def test_astype_copy(self):
         # Ticket #788, changeset r5155
@@ -1280,9 +1289,12 @@ class TestRegression(object):
 
         assert_(test_record_void_scalar == test_record)
 
-        #Test pickle and unpickle of void and record scalars
-        assert_(pickle.loads(pickle.dumps(test_string)) == test_string)
-        assert_(pickle.loads(pickle.dumps(test_record)) == test_record)
+        # Test pickle and unpickle of void and record scalars
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            assert_(pickle.loads(
+                pickle.dumps(test_string, protocol=proto)) == test_string)
+            assert_(pickle.loads(
+                pickle.dumps(test_record, protocol=proto)) == test_record)
 
     def test_blasdot_uninitialized_memory(self):
         # Ticket #950
@@ -1925,11 +1937,12 @@ class TestRegression(object):
 
     def test_pickle_bytes_overwrite(self):
         if sys.version_info[0] >= 3:
-            data = np.array([1], dtype='b')
-            data = pickle.loads(pickle.dumps(data))
-            data[0] = 0xdd
-            bytestring = "\x01  ".encode('ascii')
-            assert_equal(bytestring[0:1], '\x01'.encode('ascii'))
+            for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+                data = np.array([1], dtype='b')
+                data = pickle.loads(pickle.dumps(data, protocol=proto))
+                data[0] = 0xdd
+                bytestring = "\x01  ".encode('ascii')
+                assert_equal(bytestring[0:1], '\x01'.encode('ascii'))
 
     def test_pickle_py2_array_latin1_hack(self):
         # Check that unpickling hacks in Py3 that support
@@ -2232,9 +2245,16 @@ class TestRegression(object):
     def test_pickle_empty_string(self):
         # gh-3926
 
-        import pickle
-        test_string = np.string_('')
-        assert_equal(pickle.loads(pickle.dumps(test_string)), test_string)
+        if sys.version_info[:2] == (3, 7):
+            # For python 3.7, try to use the pickle 5 backport.
+            import pickle5 as pickle
+        else:
+            import pickle
+
+        for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
+            test_string = np.string_('')
+            assert_equal(pickle.loads(
+                pickle.dumps(test_string, protocol=proto)), test_string)
 
     def test_frompyfunc_many_args(self):
         # gh-5672

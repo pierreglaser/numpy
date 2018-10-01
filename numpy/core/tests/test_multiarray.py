@@ -49,6 +49,12 @@ if sys.version_info[:2] > (3, 2):
 else:
     EMPTY = None
 
+if sys.version_info[:2] == (3, 7):
+    import pickle5 as pickle
+else:
+    import pickle
+
+
 
 def _aligned_zeros(shape, dtype=float, order="C", align=None):
     """Allocate a new ndarray with aligned memory."""
@@ -1371,7 +1377,6 @@ class TestZeroSizeFlexible(object):
             assert_equal(zs.view((dt, 1)).shape, (0,))
 
     def test_pickle(self):
-        import pickle
         for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
             for dt in [bytes, np.void, unicode]:
                 zs = self._zeros(10, dt)
@@ -3546,7 +3551,6 @@ class TestSubscripting(object):
 
 class TestPickling(object):
     def test_roundtrip(self):
-        import pickle
         for proto in range(2, pickle.HIGHEST_PROTOCOL+1):
             carray = np.array([[2, 9], [7, 0], [3, 8]])
             DATA = [
@@ -3562,7 +3566,6 @@ class TestPickling(object):
                         err_msg="%r" % a)
 
     def _loads(self, obj):
-        import pickle
         if sys.version_info[0] >= 3:
             return pickle.loads(obj, encoding='latin1')
         else:
