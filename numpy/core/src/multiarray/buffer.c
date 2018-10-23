@@ -649,6 +649,10 @@ _buffer_get_info(PyObject *obj)
         return NULL;
     }
 
+    if (PyArray_IsScalar(obj, Generic)) {
+        return info;
+    }
+    else {
     /* Check if it is identical with an old one; reuse old one, if yes */
     key = PyLong_FromVoidPtr((void*)obj);
     if (key == NULL) {
@@ -699,6 +703,7 @@ fail:
     Py_XDECREF(item_list);
     Py_XDECREF(key);
     return NULL;
+}
 }
 
 /* Clear buffer info from the global dictionary */
@@ -902,6 +907,7 @@ gentype_getbuffer(PyObject *self, Py_buffer *view, int flags)
     view->suboffsets = NULL;
     view->obj = self;
     Py_INCREF(self);
+    _buffer_info_free(info);
     return 0;
 
 fail:
