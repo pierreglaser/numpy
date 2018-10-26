@@ -907,7 +907,7 @@ gentype_getbuffer(PyObject *self, Py_buffer *view, int flags)
     view->suboffsets = NULL;
     view->obj = self;
     Py_INCREF(self);
-    _buffer_info_free(info);
+    free(info);
     return 0;
 
 fail:
